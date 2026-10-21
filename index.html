@@ -6,7 +6,9 @@
 <title>Vocal Polish - clean up a vocal and mix it with a backing track, in your browser</title>
 <meta name="description" content="One click: finds the best part of your backing track, cleans your vocal, matches tempo and levels. Runs fully in your browser. No upload, no account.">
 <link rel="preload" href="./ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%23b8431a%27/%3E%3Crect x=%273%27 y=%276%27 width=%272%27 height=%274%27 fill=%27%23fff%27/%3E%3Crect x=%277%27 y=%273%27 width=%272%27 height=%2710%27 fill=%27%23fff%27/%3E%3Crect x=%2711%27 y=%275%27 width=%272%27 height=%276%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="logo-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="logo-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -102,7 +104,11 @@
       <div class="ctl chkrow">
         <label class="chk"><input type="checkbox" id="duck" checked> Lower music under the vocal</label>
         <label class="chk"><input type="checkbox" id="loop"> Loop backing to vocal length</label>
+        <label class="chk"><input type="checkbox" id="xfade" checked> Crossfade loop joins</label>
         <button class="btn ghost sm" id="btnFullBack" type="button" hidden>Use the full backing track again</button>
+      </div>
+      <div class="ctl"><label for="xfadeMs">Crossfade length</label><input type="range" id="xfadeMs" min="50" max="1500" step="10" value="300"><output id="xfadeMsO">300 ms</output>
+        <p class="note">Blends each repeat of a looped backing track so there is no click at the join.</p>
       </div>
     </div>
   </details>
