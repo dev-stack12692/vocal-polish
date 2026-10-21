@@ -134,7 +134,7 @@ function params() {
     lowCut: +$('lowCut').value, warmth: +$('warmth').value, presence: +$('presence').value, air: +$('air').value,
     comp: +$('comp').value, reverb: +$('reverb').value, reverbSeconds: +$('room').value,
     tempoOn: $('tempoOn').checked, offsetMs: +$('offset').value, musicDb: +$('music').value,
-    duck: $('duck').checked, loop: $('loop').checked,
+    duck: $('duck').checked, loop: $('loop').checked, xfade: $('xfade').checked, xfadeMs: +$('xfadeMs').value,
   };
 }
 
@@ -198,7 +198,7 @@ async function run() {
 }
 
 // ---- Auto Edit ---------------------------------------------------------
-const AUTO = { nrOn: true, nrAmt: 100, lowCut: 80, warmth: 0, presence: 2, air: 1.5, comp: 45, reverb: 12, room: 1.4, tempoOn: true, offset: 0, duck: true };
+const AUTO = { nrOn: true, nrAmt: 100, lowCut: 80, warmth: 0, presence: 2, air: 1.5, comp: 45, reverb: 12, room: 1.4, tempoOn: true, offset: 0, duck: true, xfade: true, xfadeMs: 300 };
 
 function setCtl(id, v) {
   const el = $(id);
@@ -244,11 +244,12 @@ async function autoEdit() {
           log.push('Could not find a clear beat in the vocal or the backing, so no tempo matching. Set the BPM boxes under Advanced if you know them.');
         }
         log.push(`Music sits ${musicDb} dB under the vocal and ducks a little while you sing.`);
+        log.push('Crossfade is on (300 ms) in case the backing loops; adjust it under Advanced.');
       } else {
         S.back = [S.backFull[0], S.backFull[1]]; S.backName = S.backFullName; S.segInfo = null; S.stretchKey = '';
         setCtl('loop', true);
         setCtl('music', -9);
-        log.push(`Backing track (${fmtTime(backSec)}) is shorter than the vocal, so it loops to the full length.`);
+        log.push(`Backing track (${fmtTime(backSec)}) is shorter than the vocal, so it loops to the full length, with a 300 ms crossfade on every join so the repeat has no click.`);
         if (S.bpmV && S.bpmB && Math.abs(S.bpmB - S.bpmV) > 0.3) log.push(`Tempo: backing ${S.bpmB} BPM matched to your vocal's ${S.bpmV} BPM, pitch kept.`);
       }
     }
@@ -343,7 +344,7 @@ $('autoEdit').onclick = autoEdit;
 
 const labels = {
   nrAmt: v => v + '%', lowCut: v => v + ' Hz', warmth: v => sgn(+v) + ' dB', presence: v => sgn(+v) + ' dB', air: v => sgn(+v) + ' dB',
-  comp: v => v + '%', reverb: v => v + '%', room: v => (+v).toFixed(1) + ' s', offset: v => sgn(+v) + ' ms', music: v => v + ' dB',
+  comp: v => v + '%', reverb: v => v + '%', room: v => (+v).toFixed(1) + ' s', offset: v => sgn(+v) + ' ms', music: v => v + ' dB', xfadeMs: v => v + ' ms',
 };
 for (const id of Object.keys(labels)) {
   const el = $(id), out = $(id + 'O');
@@ -351,7 +352,7 @@ for (const id of Object.keys(labels)) {
   el.addEventListener('input', () => { upd(); schedule(id === 'offset' || id === 'music' ? 120 : 350); });
   upd();
 }
-for (const id of ['nrOn', 'tempoOn', 'duck', 'loop']) $(id).addEventListener('change', () => schedule(0));
+for (const id of ['nrOn', 'tempoOn', 'duck', 'loop', 'xfade']) $(id).addEventListener('change', () => schedule(0));
 $('bpmV').addEventListener('change', () => { S.bpmV = parseFloat($('bpmV').value) || null; schedule(200); });
 $('bpmB').addEventListener('change', () => { S.bpmB = parseFloat($('bpmB').value) || null; schedule(200); });
 document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => {
