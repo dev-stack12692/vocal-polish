@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocal Polish - clean up a vocal and mix it with a backing track, in your browser</title>
+<meta name="description" content="Remove noise, shape the tone, match tempo and mix a vocal with a backing track. Runs fully in your browser. No upload, no account.">
+<link rel="preload" href="./ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%23b8431a%27/%3E%3Crect x=%273%27 y=%276%27 width=%272%27 height=%274%27 fill=%27%23fff%27/%3E%3Crect x=%277%27 y=%273%27 width=%272%27 height=%2710%27 fill=%27%23fff%27/%3E%3Crect x=%2711%27 y=%275%27 width=%272%27 height=%276%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <h1>Vocal Polish</h1>
+    <p class="tag">Your audio never leaves this device. Nothing is uploaded.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="step" id="s1">
+    <h2><span class="n">01</span> Vocals</h2>
+    <div class="drop" id="dropVocal" tabindex="0">
+      <input type="file" id="fileVocal" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" hidden>
+      <button class="btn" id="btnVocal" type="button">Choose vocal recording</button>
+      <span class="hint" id="nameVocal">or drop a file here. WAV, MP3, M4A, OGG.</span>
+    </div>
+    <canvas id="wfVocal" class="wf small" height="64" aria-label="Vocal waveform"></canvas>
+    <div class="facts" id="factsVocal"></div>
+  </section>
+
+  <section class="step" id="s2">
+    <h2><span class="n">02</span> Clean up and tone</h2>
+    <div class="grid">
+      <div class="ctl">
+        <label for="nrOn" class="chk"><input type="checkbox" id="nrOn" checked> Noise removal</label>
+        <input type="range" id="nrAmt" min="0" max="100" value="100" aria-label="Noise removal amount">
+        <output id="nrAmtO">100%</output>
+        <p class="note">RNNoise, loaded only when this is on (112 KB).</p>
+      </div>
+      <div class="ctl"><label for="lowCut">Low cut</label><input type="range" id="lowCut" min="40" max="250" step="5" value="80"><output id="lowCutO">80 Hz</output></div>
+      <div class="ctl"><label for="warmth">Warmth</label><input type="range" id="warmth" min="-6" max="6" step="0.5" value="0"><output id="warmthO">0 dB</output></div>
+      <div class="ctl"><label for="presence">Presence</label><input type="range" id="presence" min="-6" max="6" step="0.5" value="2"><output id="presenceO">+2 dB</output></div>
+      <div class="ctl"><label for="air">Air</label><input type="range" id="air" min="-6" max="6" step="0.5" value="1.5"><output id="airO">+1.5 dB</output></div>
+      <div class="ctl"><label for="comp">Compression</label><input type="range" id="comp" min="0" max="100" value="45"><output id="compO">45%</output></div>
+      <div class="ctl"><label for="reverb">Reverb</label><input type="range" id="reverb" min="0" max="100" value="12"><output id="reverbO">12%</output></div>
+      <div class="ctl"><label for="room">Reverb size</label><input type="range" id="room" min="0.6" max="3" step="0.1" value="1.4"><output id="roomO">1.4 s</output></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3">
+    <h2><span class="n">03</span> Backing track <span class="opt">optional</span></h2>
+    <div class="drop" id="dropBack" tabindex="0">
+      <input type="file" id="fileBack" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" hidden>
+      <button class="btn" id="btnBack" type="button">Choose backing track</button>
+      <button class="btn ghost" id="btnBackClear" type="button" hidden>Remove</button>
+      <span class="hint" id="nameBack">Instrumental, loop or full track.</span>
+    </div>
+    <canvas id="wfBack" class="wf small" height="64" aria-label="Backing waveform"></canvas>
+    <div class="facts" id="factsBack"></div>
+
+    <div class="grid" id="mixCtl">
+      <div class="ctl wide">
+        <label for="tempoOn" class="chk"><input type="checkbox" id="tempoOn" checked> Match backing tempo to vocal</label>
+        <div class="bpmrow">
+          <label>Vocal BPM <input type="number" id="bpmV" min="40" max="220" step="0.1"></label>
+          <label>Backing BPM <input type="number" id="bpmB" min="40" max="220" step="0.1"></label>
+          <button class="btn ghost sm" type="button" data-bpm="v" data-f="0.5">Vocal ÷2</button>
+          <button class="btn ghost sm" type="button" data-bpm="v" data-f="2">Vocal ×2</button>
+          <button class="btn ghost sm" type="button" data-bpm="b" data-f="0.5">Backing ÷2</button>
+          <button class="btn ghost sm" type="button" data-bpm="b" data-f="2">Backing ×2</button>
+        </div>
+        <p class="note" id="stretchNote">Detected tempo is a guess. Edit the numbers if it is off by half or double.</p>
+      </div>
+      <div class="ctl wide">
+        <label for="offset">Vocal timing</label>
+        <div class="offrow">
+          <button class="btn ghost sm" type="button" data-nudge="-10">-10 ms</button>
+          <input type="range" id="offset" min="-1000" max="1000" step="1" value="0">
+          <button class="btn ghost sm" type="button" data-nudge="10">+10 ms</button>
+          <output id="offsetO">0 ms</output>
+        </div>
+        <p class="note">Positive moves the vocal later, negative earlier.</p>
+      </div>
+      <div class="ctl"><label for="music">Music level vs vocal</label><input type="range" id="music" min="-24" max="0" step="0.5" value="-9"><output id="musicO">-9 dB</output></div>
+      <div class="ctl chkrow">
+        <label class="chk"><input type="checkbox" id="duck" checked> Lower music under the vocal</label>
+        <label class="chk"><input type="checkbox" id="loop"> Loop backing to vocal length</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="s4">
+    <h2><span class="n">04</span> Listen and export</h2>
+    <div class="status" id="status" role="status" aria-live="polite">Load a vocal to begin.</div>
+    <canvas id="wfMix" class="wf" height="96" aria-label="Mix waveform, click to seek"></canvas>
+    <div class="player">
+      <button class="btn primary" id="play" type="button" disabled>Play</button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <div class="seg" role="radiogroup" aria-label="Preview source">
+        <label><input type="radio" name="src" value="mix" checked> Mix</label>
+        <label><input type="radio" name="src" value="vox"> Vocal only</label>
+        <label><input type="radio" name="src" value="orig"> Original vocal</label>
+      </div>
+    </div>
+    <div class="export">
+      <button class="btn" id="dlWav" type="button" disabled>Download WAV</button>
+      <button class="btn" id="dlMp3" type="button" disabled>Download MP3</button>
+      <label class="mp3q">MP3 <select id="kbps"><option value="128">128 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option></select></label>
+      <span class="hint" id="sizeHint"></span>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>MIT licensed. Noise removal by RNNoise (Xiph, BSD) through the Jitsi WASM build. MP3 by lamejs (LGPL). Fonts: IBM Plex (OFL).</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
