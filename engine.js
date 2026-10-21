@@ -1,4 +1,4 @@
-import { SR, gatedRmsDb, peak, activityEnvelope, toMono } from './dsp.js';
+import { SR, gatedRmsDb, peak, activityEnvelope, toMono, loopWithCrossfade } from './dsp.js';
 
 function impulse(ctx, seconds, decayPow) {
   const n = Math.floor(seconds * SR);
@@ -66,17 +66,22 @@ export function mixdown(vocals, backing, p) {
   for (let i = 0; i < vLen; i++) { L[vStart + i] += vocals[0][i]; R[vStart + i] += vocals[1][i]; }
 
   if (backing) {
-    const bl = backing[0].length;
-    const gain = Math.pow(10, (-20 + p.musicDb - gatedRmsDb(backing)) / 20);
+    // Loop mode: pre-build the repeated backing with an equal-power crossfade
+    // on every join (length from p.xfadeMs, 0 or off = hard joins).
+    let src = backing;
+    if (p.loop && backing[0].length < total - bStart) {
+      src = loopWithCrossfade(backing, total - bStart, p.xfade ? p.xfadeMs / 1000 : 0, SR);
+    }
+    const bl = src[0].length;
+    const gain = Math.pow(10, (-20 + p.musicDb - gatedRmsDb(src)) / 20);
     const duck = p.duck ? activityEnvelope(toMono([L, R])) : null;
     const duckGain = Math.pow(10, -4 / 20);
     for (let i = bStart; i < total; i++) {
       const k = i - bStart;
-      const j = p.loop ? k % bl : k;
-      if (j >= bl) break;
+      if (k >= bl) break;
       let g = gain;
       if (duck) { const a = duck[(i / 480) | 0] || 0; g *= 1 - a * (1 - duckGain); }
-      L[i] += backing[0][j] * g; R[i] += backing[1][j] * g;
+      L[i] += src[0][k] * g; R[i] += src[1][k] * g;
     }
     if (p.loop) {
       const f = Math.min(total, Math.floor(0.25 * SR));
