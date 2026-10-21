@@ -199,6 +199,37 @@ export function applyFades(chs, fadeInSec, fadeOutSec, sr = SR) {
   return chs;
 }
 
+
+// Tile a (possibly short) loop out to `total` samples. When xfadeSec > 0 the
+// repeats overlap and blend with an equal-power crossfade, so the join has no
+// click and the loop's own tail melts into its next start.
+export function loopWithCrossfade(chs, total, xfadeSec, sr = SR) {
+  const bl = chs[0].length, nc = chs.length;
+  let X = Math.min(Math.round(xfadeSec * sr), bl >> 1);
+  if (X < 128 || total <= bl) {
+    const out = chs.map(() => new Float32Array(total));
+    for (let c = 0; c < nc; c++) for (let i = 0; i < total; i++) out[c][i] = chs[c][i % bl];
+    return out;
+  }
+  const stride = bl - X;
+  const reps = Math.max(1, Math.ceil((total - bl) / stride) + 1);
+  const outLen = bl + (reps - 1) * stride;
+  const out = chs.map(() => new Float32Array(outLen));
+  for (let r = 0; r < reps; r++) {
+    const base = r * stride;
+    for (let c = 0; c < nc; c++) {
+      const src = chs[c], dst = out[c];
+      for (let i = 0; i < bl; i++) {
+        let g = 1;
+        if (r > 0 && i < X) g = Math.sin(0.5 * Math.PI * (i / X));
+        if (i >= bl - X && base + i < outLen) g = Math.min(g, Math.cos(0.5 * Math.PI * ((i - (bl - X)) / X)));
+        dst[base + i] += src[i] * g;
+      }
+    }
+  }
+  return out.map(o => o.subarray(0, total));
+}
+
 // ---- Time stretch (WSOLA), pitch preserved ---------------------------
 // chs: array of Float32Array. ratio = outLen / inLen (>1 slower).
 export async function timeStretch(chs, ratio, onProgress) {
